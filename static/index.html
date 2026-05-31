@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система ТО машины сварки МЭС</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00b4db, #0083b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #00b4db;
+        }
+        
+        .rul-container {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #00b4db, #0083b0);
+            border-radius: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .rul-number {
+            font-size: 5rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        .status {
+            font-size: 1.5rem;
+            margin-top: 10px;
+            padding: 8px 20px;
+            border-radius: 40px;
+            display: inline-block;
+        }
+        
+        .status.normal { background: #00c853; }
+        .status.warning { background: #ff9800; }
+        .status.danger { background: #f44336; animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-table th {
+            color: #00b4db;
+        }
+        
+        .notification {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .notification.info { background: rgba(0, 180, 219, 0.2); border-left: 4px solid #00b4db; }
+        .notification.warning { background: rgba(255, 152, 0, 0.2); border-left: 4px solid #ff9800; }
+        .notification.danger { background: rgba(244, 67, 54, 0.2); border-left: 4px solid #f44336; animation: pulse-bg 1s infinite; }
+        
+        @keyframes pulse-bg {
+            0%, 100% { background-color: rgba(244, 67, 54, 0.2); }
+            50% { background-color: rgba(244, 67, 54, 0.4); }
+        }
+        
+        .notification .close {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .btn-refresh {
+            background: linear-gradient(90deg, #00b4db, #0083b0);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00c853, #ff9800, #f44336);
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Система предупреждения о техническом обслуживании</h1>
+            <p>Машина сварки МЭС — прогнозирование остаточного ресурса</p>
+        </div>
+        
+        <div class="grid-2">
+            <div class="card">
+                <h2>Текущий прогноз</h2>
+                <div class="rul-container">
+                    <div class="rul-number" id="rulValue">--</div>
+                    <div class="rul-label">циклов до обслуживания</div>
+                    <div><span class="status" id="statusValue">Загрузка...</span></div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+               
+                <span style="margin-left: 10px; font-size: 0.8rem;" id="lastUpdate"></span>
+            </div>
+            
+            <div class="card">
+                <h2>🔔 Уведомления</h2>
+                <div id="notificationsList">Нет уведомлений</div>
+            </div>
+        </div>
+        
+        <div class="grid-2">
+            <div class="card">
+                <h2>История прогнозов</h2>
+                <table class="data-table" id="historyTable">
+                    <thead><tr><th>Время</th><th>RUL</th><th>Статус</th></tr></thead>
+                    <tbody id="historyBody"><tr><td colspan="3">Загрузка...</td></tr>
+                </tbody>
+                </table>
+            </div>
+            
+            <div class="card">
+                <h2>Последние показания</h2>
+                <table class="data-table" id="dataTable">
+                    <thead><tr><th>Время</th><th>Ток (А)</th><th>Давление (МПа)</th><th>Температура (°C)</th><th>Вибрация</th></tr></thead>
+                    <tbody id="dataBody"><tr><td colspan="5">Загрузка...</td></tr>
+                </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="footer">Автообновление каждые 30 секунд</div>
+    </div>
+    
+    <div id="toastContainer"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        
+        let currentAlertSound = null;
+        
+        // Останавливает текущий звук
+        function stopAlertSound() {
+            if (currentAlertSound) {
+                currentAlertSound.stop();
+                currentAlertSound = null;
+            }
+        }
+        
+        // Запуск СИРЕНЫ РАКЕТНОЙ ОПАСНОСТИ на 5 секунд, максимальная громкость
+        function playAlertSound() {
+            try {
+                // Останавливаем предыдущий звук
+                stopAlertSound();
+                
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioContext.currentTime;
+                const duration = 5; 
+                
+                // Сирена с изменяющейся частотой 
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sawtooth'; // Резкий звук
+                gainNode.gain.value = 0.8; //  ГРОМКОСТЬ 
+                
+                // Эффект сирены
+                const startFreq = 400;
+                const endFreq = 1200;
+                
+                oscillator.frequency.setValueAtTime(startFreq, now);
+                oscillator.frequency.exponentialRampToValueAtTime(endFreq, now + 1.5);
+                oscillator.frequency.exponentialRampToValueAtTime(startFreq, now + 3);
+                oscillator.frequency.exponentialRampToValueAtTime(endFreq, now + 4.5);
+                
+                oscillator.start(now);
+                oscillator.stop(now + duration);
+                
+                // Эффект пульсации 
+                const pulseOsc = audioContext.createOscillator();
+                const pulseGain = audioContext.createGain();
+                pulseOsc.connect(pulseGain);
+                pulseGain.connect(audioContext.destination);
+                pulseOsc.type = 'square';
+                pulseOsc.frequency.value = 8; // Пульсация 8 Гц
+                pulseGain.gain.value = 0.3;
+                
+                pulseOsc.start(now);
+                pulseOsc.stop(now + 0.2);
+                
+                // Пульсацию 4 раза
+                for (let i = 0; i < 8; i++) {
+                    setTimeout(() => {
+                        const pOsc = audioContext.createOscillator();
+                        const pGain = audioContext.createGain();
+                        pOsc.connect(pGain);
+                        pGain.connect(audioContext.destination);
+                        pOsc.type = 'square';
+                        pOsc.frequency.value = 880;
+                        pGain.gain.value = 0.25;
+                        pOsc.start();
+                        pGain.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.15);
+                        pOsc.stop(audioContext.currentTime + 0.15);
+                    }, i * 400);
+                }
+                
+                currentAlertSound = { stop: () => {
+                    try {
+                        oscillator.stop();
+                        gainNode.disconnect();
+                    } catch(e) {}
+                }};
+                
+            } catch(e) {
+                console.log("Web Audio API не поддерживается:", e);
+                // Fallback: писк через alert
+                for(let i=0; i<5; i++) {
+                    setTimeout(() => { try { new AudioContext(); } catch(e) {} }, i*500);
+                }
+            }
+        }
+        
+        async function refreshData() {
+            try {
+                // Данные с датчиков
+                const dataRes = await fetch(API_BASE + '/api/latest_data?minutes=15');
+                const data = await dataRes.json();
+                const dataBody = document.getElementById('dataBody');
+                if (data.data && data.data.length > 0) {
+                    dataBody.innerHTML = data.data.slice(-20).reverse().map(r => `
+                        <tr>
+                            <td>${new Date(r.timestamp).toLocaleString()}</td>
+                            <td>${r.current}</td>
+                            <td>${r.pressure}</td>
+                            <td>${r.temperature}</td>
+                            <td>${r.vibration}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    dataBody.innerHTML = '<tr><td colspan="5">Нет данных. Запустите эмулятор.</td></tr>';
+                }
+                
+                // Прогноз
+                const predRes = await fetch(API_BASE + '/api/latest_prediction');
+                const pred = await predRes.json();
+                if (pred && pred.rul) {
+                    document.getElementById('rulValue').innerText = pred.rul;
+                    const statusEl = document.getElementById('statusValue');
+                    const statusText = pred.status === 'Норма' ? '🟢 НОРМА' : (pred.status === 'Внимание' ? '🟡 ВНИМАНИЕ' : '🔴 КРИТИЧНО');
+                    statusEl.innerHTML = statusText;
+                    statusEl.className = 'status ' + (pred.status === 'Норма' ? 'normal' : (pred.status === 'Внимание' ? 'warning' : 'danger'));
+                    
+                    // Звук при критическом статусе
+                    if (pred.status === 'Критично') {
+                        playAlertSound();
+                    } else {
+                        stopAlertSound();
+                    }
+                    
+                    const percent = Math.min(100, Math.max(0, (1 - pred.rul / 8500) * 100));
+                    document.getElementById('progressFill').style.width = percent + '%';
+                }
+                
+                // История прогнозов
+                const histRes = await fetch(API_BASE + '/api/predictions_history?limit=10');
+                const history = await histRes.json();
+                const historyBody = document.getElementById('historyBody');
+                if (history && history.length > 0) {
+                    historyBody.innerHTML = history.map(h => `
+                        <tr>
+                            <td>${new Date(h.timestamp).toLocaleString()}</td>
+                            <td>${h.rul}</td>
+                            <td>${h.status === 'Норма' ? '🟢' : (h.status === 'Внимание' ? '🟡' : '🔴')} ${h.status}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    historyBody.innerHTML = '<tr><td colspan="3">Нет истории прогнозов</td></tr>';
+                }
+                
+                // Уведомления
+                const notifRes = await fetch(API_BASE + '/api/notifications');
+                const notifs = await notifRes.json();
+                const notifDiv = document.getElementById('notificationsList');
+                if (notifs && notifs.length > 0) {
+                    notifDiv.innerHTML = notifs.map(n => `
+                        <div class="notification ${n.level}" onclick="markNotification(${n.id})">
+                            <span>🔔 ${n.message}</span>
+                            <button class="close" onclick="event.stopPropagation(); markNotification(${n.id})">✕</button>
+                        </div>
+                    `).join('');
+                } else {
+                    notifDiv.innerHTML = 'Нет уведомлений';
+                }
+                
+                document.getElementById('lastUpdate').innerText = 'Обновлено: ' + new Date().toLocaleTimeString();
+            } catch(e) {
+                console.error('Ошибка:', e);
+                document.getElementById('dataBody').innerHTML = '<tr><td colspan="5">Ошибка подключения к серверу</td></tr>';
+            }
+        }
+        
+        async function markNotification(id) {
+            await fetch(API_BASE + '/api/mark_notification/' + id, { method: 'POST' });
+            refreshData();
+        }
+        
+        refreshData();
+        setInterval(refreshData, 30000);
+    </script>
+</body>
+</html>
