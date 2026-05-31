@@ -55,7 +55,7 @@ pipeline = Pipeline([
 ])
 
 #  КРОСС-ВАЛИДАЦИЯ
-print("🔄 Кросс-валидация (5 фолдов)...")
+print(" Кросс-валидация (5 фолдов)...")
 
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
@@ -118,4 +118,4 @@ print("="*50)
 
 
 joblib.dump(pipeline, 'model_pipeline.pkl')
-print("✅ Pipeline (model + scaler) сохранён как model_pipeline.pkl")
+print(" Pipeline (model + scaler) сохранён как model_pipeline.pkl")

@@ -13,13 +13,13 @@ MODEL_PATH = os.path.join(BASE_DIR, 'model.pkl')
 SCALER_PATH = os.path.join(BASE_DIR, 'scaler.pkl')
 
 # Загрузка модели и scaler
-print("🔄 Загрузка ML модели...")
+print(" Загрузка ML модели...")
 try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
     print("Модель и счетчик загружены успешно")
 except Exception as e:
-    print(f"❌ Ошибка загрузки модели: {e}")
+    print(f" Ошибка загрузки модели: {e}")
     print("   Запустите train_model.py сначала")
     model = None
     scaler = None
